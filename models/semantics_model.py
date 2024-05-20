@@ -1,6 +1,7 @@
 import copy
 from typing import Optional, List
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
@@ -12,12 +13,20 @@ class SemanticsModel(nn.Module):
     def __init__(self, num_queries=100, d_model=512, nhead=8,
                  num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False,
-                 return_intermediate_dec=False, num_classes=None, text_feature_len=None, image_feature_channel=2048):
+                 return_intermediate_dec=False, num_classes=-1, text_feature_len=-1, image_feature_channel=2048,
+                 channel_self_attention=False, window_size=196):
         super().__init__()
+        self.channel_self_attention = channel_self_attention
+        if self.channel_self_attention:
+            d_model = window_size
+            group_num = int(np.sqrt(window_size))
+            nhead = group_num // 2
+        else:
+            group_num = 32
 
         self.return_intermediate = return_intermediate_dec
         self.image_proj = nn.Conv2d(image_feature_channel, d_model, kernel_size=1)
-        self.img_norm = nn.GroupNorm(32, d_model)
+        self.img_norm = nn.GroupNorm(group_num, d_model)
         nn.init.xavier_uniform_(self.image_proj.weight, gain=1)
         nn.init.constant_(self.image_proj.bias, 0)
 
@@ -55,6 +64,8 @@ class SemanticsModel(nn.Module):
         image_feature = self.image_proj(src)
         image_feature = self.img_norm(image_feature)
         memory = image_feature.flatten(2).permute(2, 0, 1)
+        if self.channel_self_attention:
+            memory = memory.permute(2, 1, 0)
 
         # mask 全为0
         mask = torch.zeros((bs, memory.shape[0]), device=memory.device).bool()
@@ -248,6 +259,8 @@ def build_semantics_model(args):
         dropout=args.dropout,
         activation=args.activation,
         num_classes=num_classes,
-        text_feature_len=text_feature_len
+        text_feature_len=text_feature_len,
+        channel_self_attention=args.channel_self_attention,
+        window_size=args.window_size
     )
     return model

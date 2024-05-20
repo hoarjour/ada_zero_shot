@@ -19,7 +19,7 @@ parser.add_argument('--lr', default=0.01, type=float)
 parser.add_argument('--weight_decay', default=1e-4, type=float)
 parser.add_argument('--rand_seed', default=42, type=int)
 parser.add_argument('--batch_size', default=128, type=int)
-parser.add_argument('--num_workers', default=2, type=int)
+parser.add_argument('--num_workers', default=1, type=int)
 parser.add_argument('--norm_type', help='std(standard), L2, None', default='std', type=str)
 parser.add_argument('--desc', default="default", type=str)
 
@@ -37,11 +37,15 @@ parser.add_argument('--relatedness_loss_coef', default=0, type=float)
 # model args
 parser.add_argument('--num_queries', default=100, type=int)
 parser.add_argument('--d_model', default=256, type=int)
+parser.add_argument('--window_size', default=196, type=int,
+                    help='the feature map w×h')
 parser.add_argument('--nhead', default=8, type=int)
 parser.add_argument('--num_decoder_layers', default=2, type=int)
 parser.add_argument('--dim_feedforward', default=2048, type=int)
 parser.add_argument('--dropout', default=0.1, type=float)
 parser.add_argument('--activation', default='relu', type=str)
+parser.add_argument('--channel_self_attention', action='store_true',
+                    help='change window self-attention to channel self-attention')
 
 
 def main():
