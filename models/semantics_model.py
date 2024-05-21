@@ -92,6 +92,27 @@ class SemanticsModel(nn.Module):
         return semantics_vector, text_align_vector, class_logits
 
 
+class TestModel(SemanticsModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.image_proj2 = nn.Linear(256 * 14 * 14, 100)
+
+    def forward(self, src):
+        bs, c, h, w = src.shape
+        query_embed = self.query_embed.weight.unsqueeze(1).repeat(1, bs, 1)
+        tgt = torch.zeros_like(query_embed)
+
+        # 处理输入数据
+        image_feature = self.image_proj(src)
+        image_feature = self.img_norm(image_feature)
+        memory = image_feature.view(bs, -1)
+        x = self.image_proj2(memory)
+        semantics_vector = F.relu(x)
+
+        class_logits = self.class_head(x)
+        text_align_vector = self.semantics_align(semantics_vector)
+        return semantics_vector, text_align_vector, class_logits
+
 class TransformerDecoder(nn.Module):
 
     def __init__(self, decoder_layer, num_layers, norm=None, return_intermediate=False):

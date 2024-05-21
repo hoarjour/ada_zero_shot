@@ -33,6 +33,7 @@ parser.add_argument("--class_feature_type", type=str, default="w2v", choices=['c
 # Loss coef
 parser.add_argument('--class_loss_coef', default=1, type=float)
 parser.add_argument('--relatedness_loss_coef', default=0, type=float)
+parser.add_argument('--penalty_coef', default=0, type=float)
 
 # model args
 parser.add_argument('--num_queries', default=100, type=int)
@@ -84,11 +85,10 @@ def main():
             label = label.to(torch.int64).to(device)
             class_feature = class_feature.type(torch.float32).to(device)
 
-            _, text_align_vector, class_logits = model(feature)
-            class_loss_unscaled, relatedness_loss_unscaled = criterion(text_align_vector, class_logits, class_feature, label)
-            class_loss = class_loss_unscaled * args.class_loss_coef
-            relatedness_loss = relatedness_loss_unscaled * args.relatedness_loss_coef
-            total_loss = class_loss + relatedness_loss
+            semantics_vector, text_align_vector, class_logits = model(feature)
+            loss = criterion(text_align_vector, class_logits, class_feature, label, semantics_vector)
+
+            total_loss = loss['total_loss']
             optimizer.zero_grad()
             total_loss.backward()
             # if args.max_norm > 0:  # 详细弄明白之后再用
