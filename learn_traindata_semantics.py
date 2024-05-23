@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 from datasets import build_dataset
 from models import build_semantics_model, build_criterion
-
+from utils.misc import collate_fn_new, collate_fn
 
 parser = argparse.ArgumentParser(description="ZSL")
 
@@ -25,10 +25,15 @@ parser.add_argument('--desc', default="default", type=str)
 
 # Path
 parser.add_argument("--feature_path", type=str, default="./data/CUB/resnet_features")
-parser.add_argument("--metadata_path", type=str, default="./data/CUB/metadata.pkl")
+parser.add_argument("--metadata_path", type=str, default="./data/CUB/meta_data.pkl")
+parser.add_argument("--imagename2bbox_path", type=str, default="./data/CUB/imagename2bbox.pkl")
 
 
 parser.add_argument("--class_feature_type", type=str, default="w2v", choices=['clip', 'w2v'])
+parser.add_argument('--markers', default=9, type=int)
+parser.add_argument('--compactness', default=0.001, type=float)
+parser.add_argument('--bbox_area_threshold', default=0.01, type=float,
+                    help='the bbox area ratio threshold compared to whole image area')
 
 # Loss coef
 parser.add_argument('--class_loss_coef', default=1, type=float)
@@ -67,7 +72,7 @@ def main():
     train_dataset = build_dataset(args, is_train=True)
     sampler_train = torch.utils.data.RandomSampler(train_dataset)
     batch_sampler_train = torch.utils.data.BatchSampler(sampler_train, args.batch_size, drop_last=True)
-    train_dataloader = DataLoader(train_dataset, batch_sampler=batch_sampler_train)
+    train_dataloader = DataLoader(train_dataset, collate_fn=collate_fn, batch_sampler=batch_sampler_train)
 
     # prepare model
     device = torch.device('cuda')
@@ -80,15 +85,19 @@ def main():
     print("Start Train")
     for i in range(args.epochs):
         model.train()
-        for feature, label, class_feature in train_dataloader:
-            feature = feature.to(device)
+        for image, target in train_dataloader:
+            image = image.to(device)
+
+
             label = label.to(torch.int64).to(device)
             class_feature = class_feature.type(torch.float32).to(device)
 
-            semantics_vector, text_align_vector, class_logits = model(feature)
+            semantics_vector, text_align_vector, class_logits = model(image)
             loss = criterion(text_align_vector, class_logits, class_feature, label, semantics_vector)
 
             total_loss = loss['total_loss']
+            class_loss = loss['class_loss']
+            relatedness_loss = loss['relatedness_loss']
             optimizer.zero_grad()
             total_loss.backward()
             # if args.max_norm > 0:  # 详细弄明白之后再用

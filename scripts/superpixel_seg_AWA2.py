@@ -20,12 +20,24 @@ if __name__ == '__main__':
     cnt = 0
     for p in all_img_paths:
         img = cv2.imread(p)
-        gradient = sobel(rgb2gray(img))
+        try:
+            gradient = sobel(rgb2gray(img))
+        except Exception:
+            print(f"处理图片{p} 失败，sobel阶段")
+            continue
+
         search_dict = {}
+        flag = 0
         for markers in all_markers:
             for compactness in all_compactness:
-                segments_watershed = watershed(gradient, markers=markers, compactness=compactness)
-                props = regionprops(segments_watershed)
+                try:
+                    segments_watershed = watershed(gradient, markers=markers, compactness=compactness)
+                    props = regionprops(segments_watershed)
+                except Exception:
+                    print(f"处理图片{p} 失败，watershed阶段")
+                    flag = 1
+                    continue
+
                 bboxes = [prop.bbox for prop in props]
                 new_bboxes = []
                 for _bbox in bboxes:
@@ -34,10 +46,11 @@ if __name__ == '__main__':
                     new_bboxes.append(new_bbox)
                 key = f'markers:{markers},compactness:{compactness}'
                 search_dict[key] = new_bboxes
-
+        if flag:
+            continue
         imagename2bbox[p] = search_dict
         print(f"处理完了图片 {cnt}")
-
+        cnt += 1
 
     with open(r'../data/AWA2/imagename2bbox.pkl', 'wb') as f:
         pickle.dump(imagename2bbox, f)
