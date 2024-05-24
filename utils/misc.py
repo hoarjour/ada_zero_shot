@@ -271,6 +271,11 @@ def collate_fn(batch):
     batch[0] = nested_tensor_from_tensor_list(batch[0])
     return tuple(batch)
 
+def seconds_to_hms(seconds):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+    return f"{int(hours):02}:{int(minutes):02}:{int(secs):02}"
 
 def collate_fn_new(batch):
     batch = list(zip(*batch))

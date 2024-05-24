@@ -125,7 +125,7 @@ class CustomDataset(Dataset):
         classname = classname[0]
         if self.class_feature_type == 'w2v':
             class_feature = self.class_to_w2v_feature[classname]
-            class_feature = torch.from_numpy(class_feature)
+            class_feature = torch.from_numpy(class_feature).float()
         else:
             class_feature = self.class_to_clip_feature[classname]
 
@@ -190,8 +190,10 @@ def make_coco_transforms(is_train):
 
 
 def build_dataset(args, is_train):
-    dataset = CustomDataset(metadata_path=args.metadata_path,
-                            imagename2bbox_path=args.imagename2bbox_path,
+    metadata_path = f'./data/{args.dataset}/meta_data.pkl'
+    imagename2bbox_path = f'./data/{args.dataset}/imagename2bbox.pkl'
+    dataset = CustomDataset(metadata_path=metadata_path,
+                            imagename2bbox_path=imagename2bbox_path,
                             transform=make_coco_transforms(is_train),
                             markers=args.markers,
                             compactness=args.compactness,

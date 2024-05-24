@@ -100,6 +100,7 @@ def prepare_metadata(dataset_type):
     k = 0
     for label in train_labels_seen:
         train_labels[train_labels == label] = k
+        test_seen_labels[test_seen_labels == label] = k
         k = k + 1
 
     meta_data['train_labels'] = train_labels
