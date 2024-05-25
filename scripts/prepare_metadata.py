@@ -73,8 +73,8 @@ def prepare_metadata(dataset_type):
         sub_image_paths = ['/'.join(x.split('/')[-4:]) for x in raw_image_paths]
         real_image_paths = [f'data/CUB/{x}' for x in sub_image_paths]
     elif dataset_type == 'AWA2':
-        sub_image_paths = ['/'.join(x.split('/')[-4:]) for x in raw_image_paths]
-        real_image_paths = [f'data/AWA2/AWA2-data/{x}' for x in sub_image_paths]
+        sub_image_paths = ['/'.join(x.split('/')[-3:]) for x in raw_image_paths]
+        real_image_paths = [f'data/AWA2/AWA2-data/Animals_with_Attributes2/{x}' for x in sub_image_paths]
     elif dataset_type == 'SUN':
         real_image_paths = [x.replace('/BS/Deep_Fragments/work/MSc/data/SUN', 'data/SUN/SUNAttributeDB_Images') for x in raw_image_paths]
     else:

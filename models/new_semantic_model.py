@@ -10,11 +10,12 @@ import fvcore.nn.weight_init as weight_init
 from models.image_backbone import build_image_backbone
 from models.transformer import build_transformer
 from utils.misc import NestedTensor, nested_tensor_from_tensor_list
+from models.image_backbone import build_position_encoding
 
 dataset_attr_len = {
     "CUB": {
         "num_classes": 150,
-        "text_feature_len": 309
+        "text_feature_len": 319
     },
     "SUN": {
         "num_classes": 645,
@@ -66,9 +67,7 @@ class NewSemanticsModel(nn.Module):
         weight_init.c2_xavier_fill(self.semantics_proj)
         weight_init.c2_xavier_fill(self.class_head)
         weight_init.c2_xavier_fill(self.semantics_align)
-        for name, p in self.named_parameters():
-            if p.dim() > 1 and name.split('.')[0] == 'transformer':
-                nn.init.xavier_uniform_(p)
+
 
     def forward(self, samples):
         if isinstance(samples, (list, torch.Tensor)):
@@ -107,6 +106,76 @@ class NewSemanticsModel(nn.Module):
         return semantics_vector, text_align_vector, class_logits, boxes_output
 
 
+class PretrainedSemanticsModel(nn.Module):
+    def __init__(self, position_embedding, transformer, num_classes, num_queries, aux_loss, text_feature_len,
+                 channel_self_attention=False, window_size=196):
+        super().__init__()
+        self.position_embedding = position_embedding
+        self.transformer = transformer
+        self.aux_loss = aux_loss
+        self.channel_self_attention = channel_self_attention
+        if self.channel_self_attention:
+            d_model = window_size
+            group_num = int(np.sqrt(window_size))
+        else:
+            d_model = transformer.d_model
+            group_num = 32
+
+        image_feature_channel = 2048
+        self.image_proj = nn.Conv2d(image_feature_channel, d_model, kernel_size=1)
+        self.img_norm = nn.GroupNorm(group_num, d_model)
+        nn.init.xavier_uniform_(self.image_proj.weight, gain=1)
+        nn.init.constant_(self.image_proj.bias, 0)
+
+        self.query_embed = nn.Embedding(num_queries, d_model)
+
+        self.semantics_proj = nn.Linear(d_model, 1)
+
+        self.class_head = nn.Linear(num_queries, num_classes)
+        # self.box_head = MLP(d_model, d_model, 4, 3)
+        self.box_head = nn.Linear(d_model, 4)
+        self.semantics_align = nn.Linear(num_queries, text_feature_len)
+
+        self._reset_parameters()
+
+        self.d_model = d_model
+
+    def _reset_parameters(self):
+        weight_init.c2_xavier_fill(self.semantics_proj)
+        weight_init.c2_xavier_fill(self.class_head)
+        weight_init.c2_xavier_fill(self.semantics_align)
+
+    def forward(self, src):
+        # 图像维度映射
+        image_src = self.image_proj(src)  # (batch_size, channel, h, w)
+        image_src = self.img_norm(image_src)
+
+        bs, c, h, w = image_src.shape
+        # mask 全为0
+        image_mask = torch.zeros((bs, h, w), device=src.device).bool()
+
+        query_embed = self.query_embed.weight
+        # TODO 位置编码不应该是None！！
+        tensor_list = NestedTensor(image_src, image_mask)
+        pos = self.position_embedding(tensor_list)
+        hs = self.transformer(image_src, image_mask, query_embed, pos)[0]  # 2, batch_size, 100, 256
+
+        if not self.aux_loss:
+            hs = hs[-1]
+        else:
+            raise NotImplementedError('现在不支持aux_loss')
+
+        boxes_output = self.box_head(hs).sigmoid()
+
+        semantics_vector = torch.squeeze(self.semantics_proj(hs))
+
+        # semantics_vector = torch.sigmoid(semantics_vector)  # TODO 这个地方可能是个大问题
+
+        text_align_vector = self.semantics_align(semantics_vector)
+        class_logits = self.class_head(semantics_vector)
+
+        return semantics_vector, text_align_vector, class_logits, boxes_output
+
 class MLP(nn.Module):
     """ Very simple multi-layer perceptron (also called FFN)"""
 
@@ -123,8 +192,6 @@ class MLP(nn.Module):
 
 
 def build_new_semantics_model(args):
-    backbone = build_image_backbone(args)
-
     transformer = build_transformer(args)
 
     num_classes = dataset_attr_len[args.dataset]['num_classes']
@@ -135,14 +202,28 @@ def build_new_semantics_model(args):
     else:
         raise ValueError(f"不支持的class_feature_type {args.class_feature_type}")
 
-    model = NewSemanticsModel(backbone=backbone,
-                              transformer=transformer,
-                              num_classes=num_classes,
-                              num_queries=args.num_queries,
-                              aux_loss=args.aux_loss,
-                              text_feature_len=text_feature_len,
-                              channel_self_attention=args.channel_self_attention,
-                              window_size=args.window_size
-                              )
+    if args.use_pretrained_features:
+        position_embedding = build_position_encoding(args)
+        model = PretrainedSemanticsModel(
+            position_embedding=position_embedding,
+            transformer=transformer,
+            num_classes=num_classes,
+            num_queries=args.num_queries,
+            aux_loss=args.aux_loss,
+            text_feature_len=text_feature_len,
+            channel_self_attention=args.channel_self_attention,
+            window_size=args.window_size
+        )
+    else:
+        backbone = build_image_backbone(args)
+        model = NewSemanticsModel(backbone=backbone,
+                                  transformer=transformer,
+                                  num_classes=num_classes,
+                                  num_queries=args.num_queries,
+                                  aux_loss=args.aux_loss,
+                                  text_feature_len=text_feature_len,
+                                  channel_self_attention=args.channel_self_attention,
+                                  window_size=args.window_size
+                                  )
     return model
 

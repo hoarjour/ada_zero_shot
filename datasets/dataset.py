@@ -59,7 +59,7 @@ class CUBDataset(Dataset):
 
 class CustomDataset(Dataset):
     def __init__(self, metadata_path, imagename2bbox_path, transform=None, markers=9, compactness=0.001,
-                 bbox_area_threshold=0.1,
+                 bbox_area_threshold=0.001,
                  class_feature_type='w2v',
                  is_train=True):
         metadata = load_pkl(metadata_path)
@@ -159,6 +159,84 @@ class CustomDataset(Dataset):
 
         return image, target
 
+class PretrainedDataset(Dataset):
+    def __init__(self, metadata_path, imagename2bbox_path, dataset_type, markers=9, compactness=0.001, class_feature_type='w2v', is_train=True):
+        metadata = load_pkl(metadata_path)
+        self.imagename2bbox = load_pkl(imagename2bbox_path)
+        self.dataset_type = dataset_type
+
+        self.markers = markers
+        self.compactness = compactness
+
+        self.is_train = is_train
+        assert class_feature_type in ['clip', 'w2v']
+        self.class_feature_type = class_feature_type
+
+        self.class_to_clip_feature = metadata['class_to_clip_feature']
+        self.class_to_w2v_feature = metadata['class_to_w2v_feature']
+
+        self.class_to_original_att = metadata['class_to_original_att']
+
+        self.train_labels = metadata['train_labels']
+        self.test_unseen_labels = metadata['test_unseen_labels']
+        self.test_seen_labels = metadata['test_seen_labels']
+
+        self.train_classes = metadata['train_classes']
+        self.test_unseen_classes = metadata['test_unseen_classes']
+        self.test_seen_classes = metadata['test_seen_classes']
+
+        self.train_paths = metadata['train_paths']
+        self.test_unseen_paths = metadata['test_unseen_paths']
+        self.test_seen_paths = metadata['test_seen_paths']
+
+    def __len__(self):
+        if self.is_train:
+            return self.train_paths.__len__()
+        else:
+            return self.test_seen_paths.__len__()
+
+    def __getitem__(self, idx):
+        if self.is_train:
+            image_path = self.train_paths[idx]
+            label = self.train_labels[idx]
+            classname = self.train_classes[idx]
+        else:
+            image_path = self.test_seen_paths[idx]
+            label = self.test_seen_labels[idx]
+            classname = self.test_seen_classes[idx]
+        classname = classname[0]
+
+        if self.class_feature_type == 'w2v':
+            class_feature = self.class_to_w2v_feature[classname]
+            class_feature = torch.from_numpy(class_feature).float()
+        else:
+            class_feature = self.class_to_clip_feature[classname]
+
+        original_attr = self.class_to_original_att[classname]
+        original_attr = torch.from_numpy(original_attr)
+
+        # TODO 虽然现在的数据集都是jpg，但是以后可能会不是jpg，换种实现方法
+        filename = image_path.split("/")[-1].replace(".jpg", ".npy")
+        image_feature_path = f'data/{self.dataset_type}/pretrained_features/{filename}'
+        image_feature = torch.Tensor(np.load(image_feature_path))
+
+        bbox_key1 = "../" + image_path
+        all_boxes = self.imagename2bbox[bbox_key1]  # xyxy
+
+        bbox_key2 = f'markers:{self.markers},compactness:{self.compactness}'
+        if bbox_key2 not in all_boxes:
+            raise KeyError(f"没有这个参数组合: markers:{self.markers}, compactness:{self.compactness}")
+        boxes = all_boxes[bbox_key2]
+
+        target = {
+            'label': label[0],
+            'class_feature': class_feature,
+            'boxes': torch.Tensor(boxes),
+            'original_attr': original_attr
+        }
+
+        return image_feature, target
+
 
 def make_coco_transforms(is_train):
 
@@ -190,16 +268,28 @@ def make_coco_transforms(is_train):
 
 
 def build_dataset(args, is_train):
-    metadata_path = f'./data/{args.dataset}/meta_data.pkl'
-    imagename2bbox_path = f'./data/{args.dataset}/imagename2bbox.pkl'
-    dataset = CustomDataset(metadata_path=metadata_path,
-                            imagename2bbox_path=imagename2bbox_path,
-                            transform=make_coco_transforms(is_train),
-                            markers=args.markers,
-                            compactness=args.compactness,
-                            bbox_area_threshold=args.bbox_area_threshold,
-                            class_feature_type=args.class_feature_type,
-                            is_train=is_train
-                            )
+    if args.use_pretrained_features:
+        metadata_path = f'./data/{args.dataset}/meta_data.pkl'
+        imagename2bbox_path = f'./data/{args.dataset}/pretrained_imagename2bbox.pkl'
+        dataset = PretrainedDataset(metadata_path=metadata_path,
+                                    imagename2bbox_path=imagename2bbox_path,
+                                    dataset_type=args.dataset,
+                                    markers=args.markers,
+                                    compactness=args.compactness,
+                                    is_train=is_train,
+                                    class_feature_type=args.class_feature_type
+                                    )
+    else:
+        metadata_path = f'./data/{args.dataset}/meta_data.pkl'
+        imagename2bbox_path = f'./data/{args.dataset}/imagename2bbox.pkl'
+        dataset = CustomDataset(metadata_path=metadata_path,
+                                imagename2bbox_path=imagename2bbox_path,
+                                transform=make_coco_transforms(is_train),
+                                markers=args.markers,
+                                compactness=args.compactness,
+                                bbox_area_threshold=args.bbox_area_threshold,
+                                class_feature_type=args.class_feature_type,
+                                is_train=is_train
+                                )
 
     return dataset

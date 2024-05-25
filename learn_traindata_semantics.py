@@ -71,6 +71,7 @@ parser.add_argument('--activation', default='relu', type=str)
 parser.add_argument('--pre_norm', action='store_true')
 parser.add_argument('--channel_self_attention', action='store_true',
                     help='change window self-attention to channel self-attention')
+parser.add_argument('--use_pretrained_features', action='store_true')
 
 
 def main():
@@ -88,16 +89,18 @@ def main():
     random.seed(seed)
 
     # prepare dataset
+    used_collate_fn = collate_fn if not args.use_pretrained_features else collate_fn_new
+
     train_dataset = build_dataset(args, is_train=True)
     sampler_train = torch.utils.data.RandomSampler(train_dataset)
     batch_sampler_train = torch.utils.data.BatchSampler(sampler_train, args.batch_size, drop_last=True)
-    train_dataloader = DataLoader(train_dataset, collate_fn=collate_fn, batch_sampler=batch_sampler_train,
+    train_dataloader = DataLoader(train_dataset, collate_fn=used_collate_fn, batch_sampler=batch_sampler_train,
                                   num_workers=args.num_workers)
 
     val_dataset = build_dataset(args, is_train=False)
     val_sampler = torch.utils.data.SequentialSampler(val_dataset)
     val_dataloader = DataLoader(val_dataset, args.batch_size, sampler=val_sampler,
-                                drop_last=False, collate_fn=collate_fn, num_workers=args.num_workers)
+                                drop_last=False, collate_fn=used_collate_fn, num_workers=args.num_workers)
 
     # prepare model
     device = torch.device('cuda')
@@ -129,6 +132,8 @@ def main():
         print_freq = 5
         epoch_start = time.time()
         for image, targets in metric_logger.log_every(train_dataloader, print_freq, header):
+            if args.use_pretrained_features:
+                image = torch.stack(image)
             image = image.to(device)
             for t in targets:
                 t["class_feature"] = t["class_feature"].to(device)
