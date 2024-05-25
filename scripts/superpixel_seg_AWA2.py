@@ -8,6 +8,16 @@ from skimage.segmentation import felzenszwalb, slic, quickshift, watershed, floo
 from skimage.measure import regionprops
 
 
+def downsample_image(image, scale_factor):
+    height, width = image.shape[:2]
+    new_dimensions = (int(width * scale_factor), int(height * scale_factor))
+    return cv2.resize(image, new_dimensions, interpolation=cv2.INTER_LINEAR)
+
+
+def upsample_bbox(bbox, scale_factor):
+    return [int(coord / scale_factor) for coord in bbox]
+
+
 if __name__ == '__main__':
     image_type = 'AWA2'
     all_img_paths = glob.glob('../data/AWA2/AWA2-data/Animals_with_Attributes2/JPEGImages/*/*.jpg')
@@ -17,11 +27,13 @@ if __name__ == '__main__':
     all_compactness = [0, 0.001]
     imagename2bbox = {}
 
+    scale_factor = 0.5
     cnt = 0
     for p in all_img_paths:
         img = cv2.imread(p)
         try:
-            gradient = sobel(rgb2gray(img))
+            downsampled_img = downsample_image(img, scale_factor)
+            gradient = sobel(rgb2gray(downsampled_img))
         except Exception:
             print(f"处理图片{p} 失败，sobel阶段")
             continue
@@ -43,7 +55,9 @@ if __name__ == '__main__':
                 for _bbox in bboxes:
                     _y, _x, _y1, _x1 = _bbox
                     new_bbox = [_x, _y, _x1, _y1]
-                    new_bboxes.append(new_bbox)
+                    # 将降采样后的bbox映射回原始图像尺寸
+                    upsampled_bbox = upsample_bbox(new_bbox, scale_factor)
+                    new_bboxes.append(upsampled_bbox)
                 key = f'markers:{markers},compactness:{compactness}'
                 search_dict[key] = new_bboxes
         if flag:
