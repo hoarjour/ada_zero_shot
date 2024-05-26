@@ -160,7 +160,7 @@ class CustomDataset(Dataset):
         return image, target
 
 class PretrainedDataset(Dataset):
-    def __init__(self, metadata_path, imagename2bbox_path, dataset_type, markers=9, compactness=0.001, class_feature_type='w2v', is_train=True):
+    def __init__(self, metadata_path, imagename2bbox_path, dataset_type, markers=9, compactness=0.001, class_feature_type='w2v', is_train=True, not_local=False):
         metadata = load_pkl(metadata_path)
         self.imagename2bbox = load_pkl(imagename2bbox_path)
         self.dataset_type = dataset_type
@@ -171,6 +171,7 @@ class PretrainedDataset(Dataset):
         self.is_train = is_train
         assert class_feature_type in ['clip', 'w2v']
         self.class_feature_type = class_feature_type
+        self.not_local = not_local
 
         self.class_to_clip_feature = metadata['class_to_clip_feature']
         self.class_to_w2v_feature = metadata['class_to_w2v_feature']
@@ -210,7 +211,7 @@ class PretrainedDataset(Dataset):
             class_feature = self.class_to_w2v_feature[classname]
             class_feature = torch.from_numpy(class_feature).float()
         else:
-            class_feature = self.class_to_clip_feature[classname]
+            class_feature = torch.from_numpy(self.class_to_clip_feature[classname])
 
         original_attr = self.class_to_original_att[classname]
         original_attr = torch.from_numpy(original_attr)
@@ -218,6 +219,10 @@ class PretrainedDataset(Dataset):
         # TODO 虽然现在的数据集都是jpg，但是以后可能会不是jpg，换种实现方法
         filename = image_path.split("/")[-1].replace(".jpg", ".npy")
         image_feature_path = f'data/{self.dataset_type}/pretrained_features/{filename}'
+
+        if self.not_local:
+            image_feature_path = image_feature_path.replace("data", "/mnt/share/debug/hhj/zero-shot")
+
         image_feature = torch.Tensor(np.load(image_feature_path))
 
         bbox_key1 = "../" + image_path
@@ -277,7 +282,8 @@ def build_dataset(args, is_train):
                                     markers=args.markers,
                                     compactness=args.compactness,
                                     is_train=is_train,
-                                    class_feature_type=args.class_feature_type
+                                    class_feature_type=args.class_feature_type,
+                                    not_local=args.not_local
                                     )
     else:
         metadata_path = f'./data/{args.dataset}/meta_data.pkl'
