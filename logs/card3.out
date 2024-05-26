@@ -1,0 +1,2 @@
+train_scripts/card3.sh: line 3: $'\r': command not found
+train_scripts/card3.sh: line 8: $'\r': command not found

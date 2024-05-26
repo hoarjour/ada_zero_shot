@@ -14,26 +14,27 @@ from utils.misc import collate_fn_new, collate_fn, seconds_to_hms, MetricLogger
 
 parser = argparse.ArgumentParser(description="ZSL")
 
-parser.add_argument('--dataset', help='choose between APY, AWA2, AWA1, CUB, SUN', default='CUB', type=str)
-parser.add_argument('--epochs', default=300, type=int)
+parser.add_argument('--dataset', help='choose between APY, AWA2, AWA1, CUB, SUN', default='AWA2', type=str)
+parser.add_argument('--epochs', default=10, type=int)
+parser.add_argument('--lr_drop', default=5, type=int)
 parser.add_argument('--lr', default=0.0001, type=float)
 parser.add_argument('--lr_backbone', default=0.00001, type=float)
 parser.add_argument('--weight_decay', default=1e-4, type=float)
 parser.add_argument('--rand_seed', default=42, type=int)
-parser.add_argument('--lr_drop', default=50, type=int)
-parser.add_argument('--batch_size', default=4, type=int)
+
+parser.add_argument('--batch_size', default=64, type=int)
 parser.add_argument('--num_workers', default=2, type=int)
 
 parser.add_argument('--desc', default="default", type=str)
 
-parser.add_argument("--class_feature_type", type=str, default="w2v", choices=['clip', 'w2v'])
+parser.add_argument("--class_feature_type", type=str, default="clip", choices=['clip', 'w2v'])
 parser.add_argument('--markers', default=9, type=int)
 parser.add_argument('--compactness', default=0.001, type=float)
 parser.add_argument('--bbox_area_threshold', default=0.001, type=float,
                     help='the bbox area ratio threshold compared to whole image area')
 
-parser.add_argument('--eval_every_n_epoch', default=1, type=int)
-parser.add_argument('--save_every_n_epoch', default=20, type=int)
+parser.add_argument('--eval_every_n_epoch', default=5, type=int)
+parser.add_argument('--save_every_n_epoch', default=5, type=int)
 
 # Matcher
 parser.add_argument('--set_cost_bbox', default=5, type=float,
@@ -42,11 +43,11 @@ parser.add_argument('--set_cost_giou', default=2, type=float,
                     help="giou box coefficient in the matching cost")
 
 # Loss coef
-parser.add_argument('--class_loss_coef', default=1, type=float)
-parser.add_argument('--relatedness_loss_coef', default=0, type=float)
-parser.add_argument('--penalty_coef', default=0, type=float)
-parser.add_argument('--box_loss_coef', default=1, type=float)
-parser.add_argument('--giou_loss_coef', default=0, type=float)
+parser.add_argument('--class_loss_coef', default=3, type=float)
+parser.add_argument('--relatedness_loss_coef', default=1, type=float)
+parser.add_argument('--penalty_coef', default=1, type=float)
+parser.add_argument('--box_loss_coef', default=2, type=float)
+parser.add_argument('--giou_loss_coef', default=1, type=float)
 
 # freeze model
 parser.add_argument('--freeze_backnone', action='store_true')
@@ -72,10 +73,13 @@ parser.add_argument('--pre_norm', action='store_true')
 parser.add_argument('--channel_self_attention', action='store_true',
                     help='change window self-attention to channel self-attention')
 parser.add_argument('--use_pretrained_features', action='store_true')
+parser.add_argument('--not_local', action='store_true')
 
 
 def main():
     args = parser.parse_args()
+    if args.compactness == 0:
+        args.compactness = 0
     print(f'args: {args}')
 
     # get the time for naming log file
@@ -87,6 +91,8 @@ def main():
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+    # torch.backends.cudnn.benchmark = False
 
     # prepare dataset
     used_collate_fn = collate_fn if not args.use_pretrained_features else collate_fn_new
@@ -130,7 +136,6 @@ def main():
         metric_logger = MetricLogger(delimiter="  ")
         header = 'Epoch: [{}]'.format(i)
         print_freq = 5
-        epoch_start = time.time()
         for image, targets in metric_logger.log_every(train_dataloader, print_freq, header):
             if args.use_pretrained_features:
                 image = torch.stack(image)
@@ -153,16 +158,12 @@ def main():
             loss_value_dict = {k: v.item() for k, v in loss.items()}
             metric_logger.update(**loss_value_dict)
 
-        train_epoch_cost = time.time() - epoch_start
-        train_epoch_cost = seconds_to_hms(train_epoch_cost)
         print("Averaged stats:", metric_logger)
-        print(f"epoch {i} Train 消耗时间 f{train_epoch_cost}")
 
         lr_scheduler.step()
 
         # val
         print("Start Val")
-        val_start = time.time()
         model.eval()
         if (i + 1) % args.eval_every_n_epoch == 0 or i + 1 == args.epochs:
             all_val_images = len(val_dataset)
@@ -171,6 +172,8 @@ def main():
             header = 'Test:'
             print_freq = 5
             for image, targets in metric_logger.log_every(val_dataloader, print_freq, header):
+                if args.use_pretrained_features:
+                    image = torch.stack(image)
                 image = image.to(device)
                 for t in targets:
                     t["class_feature"] = t["class_feature"].to(device)
@@ -188,27 +191,25 @@ def main():
 
             acc = correct_num / all_val_images
             print(f'Val acc : {acc}')
-        val_epoch_cost = time.time() - val_start
-        val_epoch_cost = seconds_to_hms(val_epoch_cost)
-        print(f"epoch {i} Val 消耗时间 f{val_epoch_cost}")
+            print("Averaged stats:", metric_logger)
 
         if (i + 1) % args.save_every_n_epoch == 0 or i + 1 == args.epochs:
             checkpoint_save_path = os.path.join(checkpoint_save_dir,
-                                                f'{month}_{day}_{hour}_{args.desc}_epoch_{i}_checkpoint.pth')
+                                                f'{month}_{day}_{hour}_{args.desc}_epoch_{i}.pth')
             torch.save({
                 'model': model.state_dict(),
-                'optimizer': optimizer.state_dict(),
-                'lr_scheduler': lr_scheduler.state_dict(),
-                'epoch': i,
+                # 'optimizer': optimizer.state_dict(),
+                # 'lr_scheduler': lr_scheduler.state_dict(),
+                # 'epoch': i,
                 'args': args,
             }, checkpoint_save_path)
 
-    checkpoint_save_path = os.path.join(checkpoint_save_dir,
-                                        f'{month}_{day}_{hour}_{args.desc}_final_checkpoint.pth')
-    torch.save({
-        'model': model.state_dict(),
-        'args': args,
-    }, checkpoint_save_path)
+    # checkpoint_save_path = os.path.join(checkpoint_save_dir,
+    #                                     f'{month}_{day}_{hour}_{args.desc}_final_checkpoint.pth')
+    # torch.save({
+    #     'model': model.state_dict(),
+    #     'args': args,
+    # }, checkpoint_save_path)
 
 
 if __name__ == '__main__':

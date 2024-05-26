@@ -1,0 +1,14 @@
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc m_25_c_0 --num_queries 100 --markers 25 --compactness 0 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 2 --dec_layers 2 >> logs/CUB/m_25_c_0.out
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc m_50_c_0 --num_queries 100 --markers 50 --compactness 0 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 2 --dec_layers 2 >> logs/CUB/m_50_c_0.out
+
+# 测试loss平衡
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc box_3_giou_1 --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 3 --giou_loss_coef 1 --enc_layers 2 --dec_layers 2 >> logs/CUB/box_3_giou_1.out
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc box_3_giou_2 --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 3 --giou_loss_coef 2 --enc_layers 2 --dec_layers 2 >> logs/CUB/box_3_giou_2.out
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc class_4 --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 4 --penalty_coef 1 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 2 --dec_layers 2 >> logs/CUB/class_4.out
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc penalty_2 --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 3 --penalty_coef 2 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 2 --dec_layers 2 >> logs/CUB/penalty_2.out
+
+# 测试层数
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc layer_1 --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 1 --dec_layers 1 >> logs/CUB/layer_1.out
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc layer_3 --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 3 --dec_layers 3 >> logs/CUB/layer_3.out
+
+CUDA_VISIBLE_DEVICES=3 python learn_traindata_semantics.py --not_local --use_pretrained_features --dataset CUB --desc w2v_align --class_feature_type w2v --num_queries 100 --markers 9 --compactness 0.001 --class_loss_coef 3 --penalty_coef 1 --box_loss_coef 2 --giou_loss_coef 1 --enc_layers 2 --dec_layers 2 >> logs/CUB/w2v_align.out

@@ -3,12 +3,9 @@ import os
 
 import torch
 import numpy as np
-import argparse
-import clip
 from PIL import Image
 from datasets.dataset import CustomDataset
 import datasets.transforms as T
-from torchvision import datasets, transforms
 import torchvision.models.resnet as models
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -51,7 +48,7 @@ class TempDataset(CustomDataset):
 
 
 if __name__ == '__main__':
-    datatypes = ['CUB', 'AWA2', 'SUN']
+    datatypes = ['AWA2', 'CUB', 'AWA2', 'SUN']
     image_split_sets = ['train', 'test_seen', 'test_unseen']
     transform = T.Compose([
         T.RandomResize([448]),
@@ -74,7 +71,8 @@ if __name__ == '__main__':
                                                          shuffle=False, num_workers=2)
 
             # all_features = {}
-            temp_save_dir = f'../data/{datatype}/pretrained_features'
+            # temp_save_dir = f'../data/{datatype}/pretrained_features'
+            temp_save_dir = f'/mnt/share/debug/hhj/zero_shot/{datatype}/pretrained_features'  # remote
             os.makedirs(temp_save_dir, exist_ok=True)
             with torch.no_grad():
                 for idx, (image, targets) in enumerate(dataset_loader):

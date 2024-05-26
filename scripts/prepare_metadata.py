@@ -48,9 +48,9 @@ def prepare_metadata(dataset_type):
 
     text_token = clip.tokenize(prompted_classes).to(device)
     with torch.no_grad():
-        clip_text_features = clip_model.encode_text(text_token).float().cpu()
+        clip_text_features = clip_model.encode_text(text_token).float().cpu().numpy()
     # clip_text_features /= clip_text_features.norm(dim=-1, keepdim=True)  # 不进行norm
-    meta_data['class_to_clip_feature'] = dict(zip(all_classnames, torch.unbind(clip_text_features, 0)))
+    meta_data['class_to_clip_feature'] = dict(zip(all_classnames, clip_text_features))
 
     # w2v feature
     w2v_feature = w2v_attr['att'].T

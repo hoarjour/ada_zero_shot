@@ -1,0 +1,108 @@
+Traceback (most recent call last):
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 218, in <module>
+    main()
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 141, in main
+    for image, targets in metric_logger.log_every(train_dataloader, print_freq, header):
+  File "/home/user/hhj/ada_zero_shot_clf/utils/misc.py", line 223, in log_every
+    for obj in iterable:
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 630, in __next__
+    data = self._next_data()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1345, in _next_data
+    return self._process_data(data)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1371, in _process_data
+    data.reraise()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/_utils.py", line 694, in reraise
+    raise exception
+KeyError: Caught KeyError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/hhj/ada_zero_shot_clf/datasets/dataset.py", line 233, in __getitem__
+    raise KeyError(f"没有这个参数组合: markers:{self.markers}, compactness:{self.compactness}")
+KeyError: '没有这个参数组合: markers:9, compactness:0.0'
+
+Traceback (most recent call last):
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 218, in <module>
+    main()
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 141, in main
+    for image, targets in metric_logger.log_every(train_dataloader, print_freq, header):
+  File "/home/user/hhj/ada_zero_shot_clf/utils/misc.py", line 223, in log_every
+    for obj in iterable:
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 630, in __next__
+    data = self._next_data()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1345, in _next_data
+    return self._process_data(data)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1371, in _process_data
+    data.reraise()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/_utils.py", line 694, in reraise
+    raise exception
+KeyError: Caught KeyError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/hhj/ada_zero_shot_clf/datasets/dataset.py", line 233, in __getitem__
+    raise KeyError(f"没有这个参数组合: markers:{self.markers}, compactness:{self.compactness}")
+KeyError: '没有这个参数组合: markers:15, compactness:0.0'
+
+Traceback (most recent call last):
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 218, in <module>
+    main()
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 141, in main
+    for image, targets in metric_logger.log_every(train_dataloader, print_freq, header):
+  File "/home/user/hhj/ada_zero_shot_clf/utils/misc.py", line 223, in log_every
+    for obj in iterable:
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 630, in __next__
+    data = self._next_data()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1345, in _next_data
+    return self._process_data(data)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1371, in _process_data
+    data.reraise()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/_utils.py", line 694, in reraise
+    raise exception
+KeyError: Caught KeyError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/hhj/ada_zero_shot_clf/datasets/dataset.py", line 233, in __getitem__
+    raise KeyError(f"没有这个参数组合: markers:{self.markers}, compactness:{self.compactness}")
+KeyError: '没有这个参数组合: markers:25, compactness:0.0'
+
+Traceback (most recent call last):
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 218, in <module>
+    main()
+  File "/home/user/hhj/ada_zero_shot_clf/learn_traindata_semantics.py", line 141, in main
+    for image, targets in metric_logger.log_every(train_dataloader, print_freq, header):
+  File "/home/user/hhj/ada_zero_shot_clf/utils/misc.py", line 223, in log_every
+    for obj in iterable:
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 630, in __next__
+    data = self._next_data()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1345, in _next_data
+    return self._process_data(data)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/dataloader.py", line 1371, in _process_data
+    data.reraise()
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/_utils.py", line 694, in reraise
+    raise exception
+KeyError: Caught KeyError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+    data = fetcher.fetch(index)
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/miniconda3/envs/ar/lib/python3.10/site-packages/torch/utils/data/_utils/fetch.py", line 51, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/home/user/hhj/ada_zero_shot_clf/datasets/dataset.py", line 233, in __getitem__
+    raise KeyError(f"没有这个参数组合: markers:{self.markers}, compactness:{self.compactness}")
+KeyError: '没有这个参数组合: markers:50, compactness:0.0'
+
